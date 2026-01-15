@@ -1,0 +1,6 @@
+{
+  "status": "{{status}}",
+  "issueLinks": [
+    "{{defectKey}}"
+  ]
+}

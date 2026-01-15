@@ -11,4 +11,9 @@ public class CountResult {
     private int totalPostgres;
     private int missingInOracle;
     private int missingInPostgres;
+
+    public CountResult(int totalOracle, int totalPostgres) {
+        this.totalOracle = totalOracle;
+        this.totalPostgres = totalPostgres;
+    }
 }

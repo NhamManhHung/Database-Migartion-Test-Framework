@@ -1,0 +1,13 @@
+{
+  "fields": {
+    "project": {
+      "key": "DATB"
+    },
+    "summary": "{{summary}}",
+    "description": "{{description}}",
+    "issuetype": {
+      "name": "Defect"
+    },
+    "customfield_10006": "{{epicLink}}"
+  }
+}

@@ -106,7 +106,6 @@
                     </suiteXmlFiles>
                     <trimStackTrace>true</trimStackTrace>
                     <printSummary>true</printSummary>
-                    <disableXmlReport>false</disableXmlReport>
                 </configuration>
             </plugin>
         </plugins>

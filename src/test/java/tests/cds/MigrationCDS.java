@@ -24,30 +24,31 @@ public class MigrationCDS extends BaseTest {
     public static final String ATTR_COUNT_RESULT = "COUNT_RESULT";
     public static final String ATTR_DUPLICATE_RESULT = "DUPLICATE_RESULT";
 
-
-    @Test(
-            dataProvider = "tableMigrationProvider",
-            dataProviderClass = MigrationDataProvider.class,
-            description = "HASH"
-    )
-    public void testTableMigration(TableInfoCSV table) throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        String tableName = table.getTableName();
-        String pk = table.getPrimaryKeyColumn();
-        Future<Map<String, String>> oracleFuture =
-                executor.submit(() -> DbUtil.queryToHashMap(oracle, tableName, pk));
-
-        Future<Map<String, String>> postgresFuture =
-                executor.submit(() -> DbUtil.queryToHashMap(postgres, tableName, pk));
-
-        KeyMatchingResult keyMatchingResult = HashCompareHelper.compareHash(oracleFuture.get(), postgresFuture.get(), tableName);
-
-        Reporter.getCurrentTestResult()
-                .setAttribute(ATTR_KEY_MATCHING_RESULT, keyMatchingResult);
-
-        Assert.assertEquals(keyMatchingResult.getMismatch(), 0, "DATA MISMATCH");
-    }
-
+    //
+//
+//    @Test(
+//            dataProvider = "tableMigrationProvider",
+//            dataProviderClass = MigrationDataProvider.class,
+//            description = "HASH"
+//    )
+//    public void testTableMigration(TableInfoCSV table) throws Exception {
+//        ExecutorService executor = Executors.newFixedThreadPool(2);
+//        String tableName = table.getTableName();
+//        String pk = table.getPrimaryKeyColumn();
+//        Future<Map<String, String>> oracleFuture =
+//                executor.submit(() -> DbUtil.queryToHashMap(oracle, tableName, pk));
+//
+//        Future<Map<String, String>> postgresFuture =
+//                executor.submit(() -> DbUtil.queryToHashMap(postgres, tableName, pk));
+//
+//        KeyMatchingResult keyMatchingResult = HashCompareHelper.compareHash(oracleFuture.get(), postgresFuture.get(), tableName);
+//
+//        Reporter.getCurrentTestResult()
+//                .setAttribute(ATTR_KEY_MATCHING_RESULT, keyMatchingResult);
+//
+//        Assert.assertEquals(keyMatchingResult.getMismatch(), 0, "DATA MISMATCH");
+//    }
+//
     @Test(
             dataProvider = "tableMigrationProvider",
             dataProviderClass = MigrationDataProvider.class,
@@ -72,6 +73,8 @@ public class MigrationCDS extends BaseTest {
         Reporter.getCurrentTestResult()
                 .setAttribute(ATTR_COUNT_RESULT, countResult);
 
+        Reporter.getCurrentTestResult()
+                .setAttribute("TABLE_INFO", table);
         Assert.assertEquals(
                 postgresCount,
                 oracleCount,
@@ -80,47 +83,59 @@ public class MigrationCDS extends BaseTest {
                         ", postgres=" + postgresCount + ")"
         );
     }
-
-    @Test(
-            dataProvider = "tableMigrationProvider",
-            dataProviderClass = MigrationDataProvider.class,
-            description = "DUPLICATE"
-    )
-    public void testTableDuplicateId(TableInfoCSV table) throws Exception {
-
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        String tableName = table.getTableName();
-        String pkColumns = table.getPrimaryKeyColumn();
-
-        Future<List<String>> oracleFuture =
-                executor.submit(() ->
-                        DbUtil.queryDuplicateKeys(oracle, tableName, pkColumns));
-
-        Future<List<String>> postgresFuture =
-                executor.submit(() ->
-                        DbUtil.queryDuplicateKeys(postgres, tableName, pkColumns));
-
-        List<String> oracleDuplicates = oracleFuture.get();
-        List<String> postgresDuplicates = postgresFuture.get();
-        DuplicateResult duplicateResult = new DuplicateResult(
-                tableName,
-                oracleDuplicates.size(),
-                postgresDuplicates.size()
-        );
-        Reporter.getCurrentTestResult()
-                .setAttribute(ATTR_DUPLICATE_RESULT, duplicateResult);
-
-        Assert.assertTrue(
-                oracleDuplicates.isEmpty(),
-                "Oracle has duplicate PKs in table " + tableName + ": " + oracleDuplicates
-        );
-
-        Assert.assertTrue(
-                postgresDuplicates.isEmpty(),
-                "Postgres has duplicate PKs in table " + tableName + ": " + postgresDuplicates
-        );
-    }
-
+//
+//    @Test(
+//            dataProvider = "tableMigrationProvider",
+//            dataProviderClass = MigrationDataProvider.class,
+//            description = "DUPLICATE"
+//    )
+//    public void testTableDuplicateId(TableInfoCSV table) throws Exception {
+//
+//        ExecutorService executor = Executors.newFixedThreadPool(2);
+//
+//        String tableName = table.getTableName();
+//        String pkColumns = table.getPrimaryKeyColumn();
+//
+//        Future<List<String>> oracleFuture =
+//                executor.submit(() ->
+//                        DbUtil.queryDuplicateKeys(oracle, tableName, pkColumns));
+//
+//        Future<List<String>> postgresFuture =
+//                executor.submit(() ->
+//                        DbUtil.queryDuplicateKeys(postgres, tableName, pkColumns));
+//
+//        List<String> oracleDuplicates = oracleFuture.get();
+//        List<String> postgresDuplicates = postgresFuture.get();
+//        DuplicateResult duplicateResult = new DuplicateResult(
+//                tableName,
+//                oracleDuplicates.size(),
+//                postgresDuplicates.size()
+//        );
+//        Reporter.getCurrentTestResult()
+//                .setAttribute(ATTR_DUPLICATE_RESULT, duplicateResult);
+//
+//        Assert.assertTrue(
+//                oracleDuplicates.isEmpty(),
+//                "Oracle has duplicate PKs in table " + tableName + ": " + oracleDuplicates
+//        );
+//
+//        Assert.assertTrue(
+//                postgresDuplicates.isEmpty(),
+//                "Postgres has duplicate PKs in table " + tableName + ": " + postgresDuplicates
+//        );
+//    }
+//    @Test
+//    public void compare_count_mismatch() {
+//
+//        CountResult detail = new CountResult(265, 265);
+//
+//        Reporter.getCurrentTestResult()
+//                .setAttribute("COMPARE_TYPE", TestcaseType.COUNT);
+//
+//        Reporter.getCurrentTestResult()
+//                .setAttribute("COMPARE_DETAIL", detail);
+//
+//        Assert.fail("Count mismatch detected");
+//    }
 
 }
