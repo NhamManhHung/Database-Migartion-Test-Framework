@@ -1,6 +1,12 @@
 package auto.framework.utils;
 
 import auto.framework.models.dto.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -69,4 +75,31 @@ public class HttpClientUtil {
             return sb.toString();
         }
     }
+
+    public static HttpResponse postMultipart(
+            String url,
+            String token,
+            File file
+    ) throws Exception {
+
+        CloseableHttpClient client = HttpClients.createDefault();
+
+        HttpPost post = new HttpPost(url);
+        post.setHeader("Authorization", "Bearer " + token);
+        post.setHeader("X-Atlassian-Token", "no-check");
+
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.addBinaryBody(
+                "file",
+                file,
+                ContentType.DEFAULT_BINARY,
+                file.getName()
+        );
+
+        post.setEntity(builder.build());
+
+        CloseableHttpResponse response = client.execute(post);
+        return HttpResponse.from(response);
+    }
+
 }

@@ -1,5 +1,6 @@
 package auto.framework.helpers;
 
+import auto.framework.models.enums.FileConfig;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
@@ -10,18 +11,18 @@ public class RuleConfigHelper {
     private static Map<String, Object> rules;
 
     public static void loadRules() {
-        String ruleFile = "rule/convert_rule.yml";
+        String ruleFile = FileConfig.RULE_FILE;
         try (InputStream is = RuleConfigHelper.class
                 .getClassLoader()
                 .getResourceAsStream(ruleFile)) {
 
-            if (is == null) throw new RuntimeException("Cannot find rule file: " + ruleFile);
+            if (is == null) throw new RuntimeException("Cannot find config file: " + ruleFile);
 
             Yaml yaml = new Yaml();
             rules = yaml.load(is);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load rule file: " + ruleFile, e);
+            throw new RuntimeException("Failed to load config file: " + ruleFile, e);
         }
     }
 

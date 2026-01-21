@@ -1,3 +1,20 @@
 {
-  "status": "{{status}}"
+  "status": "Pass",
+  "environment": "{{env.name}}",
+  "assignedTo": "JIRAUSER25022",
+  "executedBy": "JIRAUSER25022",
+  "scriptResults": [
+    {
+      "index": 0,
+      "status": "Pass"
+    },
+    {
+      "index": 1,
+      "status": "Pass"
+    },
+    {
+      "index": 2,
+      "status": "Pass"
+    }
+  ]
 }

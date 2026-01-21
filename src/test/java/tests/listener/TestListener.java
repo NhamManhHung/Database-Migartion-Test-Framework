@@ -1,21 +1,15 @@
 package tests.listener;
 
-import auto.framework.models.dto.CountResult;
-import auto.framework.models.dto.DuplicateResult;
-import auto.framework.models.dto.KeyMatchingResult;
-import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.models.dto.*;
+import auto.framework.models.enums.TestcaseType;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TestListener implements ITestListener {
-    public static final String ATTR_KEY_MATCHING_RESULT = "KEY_MATCHING_RESULT";
-    public static final String ATTR_COUNT_RESULT = "COUNT_RESULT";
-    public static final String ATTR_DUPLICATE_RESULT = "DUPLICATE_RESULT";
 
     private final Map<String, Long> startTimes = new ConcurrentHashMap<>();
 
@@ -33,14 +27,18 @@ public class TestListener implements ITestListener {
     public void onTestFailure(ITestResult result) {
         log(result, "FAILED");
 
-        Optional.ofNullable((KeyMatchingResult) result.getAttribute(ATTR_KEY_MATCHING_RESULT))
-                .ifPresent(this::logResultKeyMatching);
+        Object detail = result.getAttribute(TestcaseType.DETAIL_DATA);
 
-        Optional.ofNullable((CountResult) result.getAttribute(ATTR_COUNT_RESULT))
-                .ifPresent(this::logResultCount);
+        if (detail instanceof KeyMatchingResult) {
+            logResultKeyMatching((KeyMatchingResult) detail);
 
-        Optional.ofNullable((DuplicateResult) result.getAttribute(ATTR_DUPLICATE_RESULT))
-                .ifPresent(this::logResultDuplicates);
+        } else if (detail instanceof CountResult) {
+            logResultCount((CountResult) detail);
+
+        } else if (detail instanceof DuplicateResult) {
+            logResultDuplicates((DuplicateResult) detail);
+        }
+
     }
 
     @Override
@@ -94,9 +92,9 @@ public class TestListener implements ITestListener {
         }
 
         String tcKey = switch (testType) {
-            case "HASH" -> table.getTcKeyMatching();
-            case "DUPLICATE" -> table.getTcKeyDuplicate();
-            case "COUNT" -> table.getTcKeyCount();
+            case TestcaseType.KEY_MATCHING -> table.getTcKeyMatching();
+            case TestcaseType.DUPLICATE -> table.getTcKeyDuplicate();
+            case TestcaseType.COUNT -> table.getTcKeyCount();
             default -> null;
         };
 
@@ -105,7 +103,7 @@ public class TestListener implements ITestListener {
 
     public void logResultKeyMatching(KeyMatchingResult r) {
         System.out.println(
-                "\n[KEY-MATCHING] Table: " + r.getTableName() +
+                "\n[ "+ TestcaseType.KEY_MATCHING + " ] Table: " + r.getTableName() +
                         "\n       Oracle rows     : " + r.getTotalOracle() +
                         "\n       Postgres rows   : " + r.getTotalPostgres() +
                         "\n       Mismatch        : " + r.getMismatch() +
@@ -116,7 +114,7 @@ public class TestListener implements ITestListener {
 
     public void logResultDuplicates(DuplicateResult r) {
         System.out.println(
-                "\n[DUPLICATE] Table: " + r.getTableName() +
+                "\n[ "+ TestcaseType.DUPLICATE + " ] Table: " + r.getTableName() +
                         "\n       Oracle duplicate count  : " + r.getDuplicateInOracle() +
                         "\n       Postgres duplicate count: " + r.getDuplicateInPostgres()
         );
@@ -124,7 +122,7 @@ public class TestListener implements ITestListener {
 
     public void logResultCount(CountResult r) {
         System.out.println(
-                "\n[COUNT] Table: " + r.getTableName() +
+                "\n[ "+ TestcaseType.COUNT + " ] Table: " + r.getTableName() +
                         "\n       Oracle rows  : " + r.getTotalOracle() +
                         "\n       Postgres rows: " + r.getTotalPostgres()
         );

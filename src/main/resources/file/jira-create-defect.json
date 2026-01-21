@@ -8,6 +8,10 @@
     "issuetype": {
       "name": "Defect"
     },
+    "labels": [
+      "{{labels}}"
+    ],
+    "customfield_10401": "Panthers",
     "customfield_10006": "{{epicLink}}"
   }
 }

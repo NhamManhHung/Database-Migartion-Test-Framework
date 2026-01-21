@@ -4,6 +4,7 @@ import auto.framework.helpers.RuleConfigHelper;
 import auto.framework.models.dto.DataCSV;
 import auto.framework.models.enums.DbType;
 import auto.framework.helpers.DbMetaHelper;
+import auto.framework.models.enums.FileConfig;
 
 import java.sql.*;
 import java.util.*;
@@ -11,7 +12,6 @@ import java.util.*;
 
 public class DbUtil {
 
-    private static final String CSV_FILE = "file/csv.properties";
     /**
      * CONNECTION
      */
@@ -107,7 +107,7 @@ public class DbUtil {
         String sql = buildHashQuery(table, pkList, normalized, dbType);
 
         Map<String, String> result = new HashMap<>();
-        String dataFile = ConfigUtil.get(CSV_FILE, "report.path").replace("{path}", table.toUpperCase() + "_" + dbType.name() + ".csv");
+        String dataFile = FileConfig.REPORT_PATH.replace("{path}", table.toUpperCase() + "_" + dbType.name() + ".csv");
 
         try (
                 CsvStreamWriter<DataCSV> csv = new CsvStreamWriter<>(dataFile, DataCSV.class, ',', 10000);

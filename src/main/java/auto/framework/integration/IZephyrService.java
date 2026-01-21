@@ -1,5 +1,7 @@
 package auto.framework.integration;
 
+import auto.framework.reporting.DefectRequest;
+
 public interface IZephyrService {
 
     boolean isTestRunExist(String runKey);
@@ -8,7 +10,8 @@ public interface IZephyrService {
             String runKey,
             String testCaseKey,
             String status,
-            String defectKey
+            String defectKey,
+            DefectRequest req
     );
 }
 

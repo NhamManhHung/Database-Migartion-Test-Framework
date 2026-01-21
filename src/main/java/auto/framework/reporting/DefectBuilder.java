@@ -2,32 +2,44 @@ package auto.framework.reporting;
 
 import auto.framework.models.dto.CountResult;
 import auto.framework.models.enums.TestcaseType;
+import auto.framework.utils.ConfigUtil;
 
 public class DefectBuilder {
 
     public static DefectRequest build(
-            TestcaseType type,
+            String type,
             String table,
-            CountResult detail,
+            Object detailData,
             String epicKey) {
-
+        String appName = ConfigUtil.getEnv("app.name");
         String summary;
+        String prefix = appName + ": " + table;
+
         String description = switch (type) {
-            case COUNT -> {
-                summary = table + " record count is mismatch";
-                yield table +
-                        "\\nSource = " + detail.getTotalOracle() +
-                        "\\nTarget = " + detail.getTotalPostgres();
+
+            case TestcaseType.COUNT -> {
+                CountResult data = (CountResult) detailData;
+
+                summary = prefix + " record count is mismatch";
+
+                yield prefix +
+                        "\nSource = " + data.getTotalOracle() +
+                        "\nTarget = " + data.getTotalPostgres();
             }
-            case DUPLICATE -> {
-                summary = table + " has duplicate records";
-                yield table + " has duplicate records";
+
+            case TestcaseType.DUPLICATE -> {
+                summary = prefix + " has duplicate records";
+                yield summary;
             }
-            default -> {
-                summary = table + " has mismatch data";
-                yield table + " has mismatch data";
+
+            case TestcaseType.KEY_MATCHING -> {
+                summary = prefix + " has mismatch data";
+                yield summary;
             }
+
+            default -> throw new RuntimeException("Unknown TestcaseType " + type);
         };
+
 
         return new DefectRequest(summary, description, epicKey);
     }

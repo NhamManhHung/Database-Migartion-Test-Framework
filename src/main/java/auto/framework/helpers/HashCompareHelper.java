@@ -3,7 +3,7 @@ package auto.framework.helpers;
 import auto.framework.models.dto.CountResult;
 import auto.framework.models.dto.KeyMatchingResult;
 import auto.framework.models.dto.ReportCSV;
-import auto.framework.models.enums.TestcaseType;
+import auto.framework.models.enums.FileConfig;
 import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.CsvUtil;
 
@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 public class HashCompareHelper {
-
-    private static final String CSV_FILE = "file/csv.properties";
     /**
      * COMPARE DATA
      */
@@ -46,7 +44,7 @@ public class HashCompareHelper {
                 report.add(new ReportCSV(id, "MISSING IN ORACLE"));
             }
         }
-        String dataFile = ConfigUtil.get(CSV_FILE, "report.path").replace("{path}", table + ".csv" );
+        String dataFile = FileConfig.REPORT_PATH.replace("{path}", table + ".csv" );
         new CsvUtil<>(ReportCSV.class)
                 .write(dataFile, report);
 

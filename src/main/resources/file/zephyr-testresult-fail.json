@@ -1,6 +1,24 @@
 {
-  "status": "{{status}}",
+  "status": "Fail",
+  "environment": "{{env.name}}",
+  "assignedTo": "JIRAUSER25022",
+  "executedBy": "JIRAUSER25022",
   "issueLinks": [
     "{{defectKey}}"
+  ],
+  "scriptResults": [
+    {
+      "index": 0,
+      "status": "Pass"
+    },
+    {
+      "index": 1,
+      "status": "Pass"
+    },
+    {
+      "index": 2,
+      "status": "Fail",
+      "comment":  "{{description}}"
+    }
   ]
 }

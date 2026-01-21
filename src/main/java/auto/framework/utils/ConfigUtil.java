@@ -1,14 +1,13 @@
 package auto.framework.utils;
 
+import auto.framework.models.enums.FileConfig;
+
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConfigUtil {
-
-    private static final String ENV_DIR = "env/";
-    private static final String DEFAULT_ENV = "env.properties";
 
     private static final Properties envProps = new Properties();
 
@@ -22,12 +21,12 @@ public class ConfigUtil {
         try {
             String profile = System.getProperty("profiles-active");
             if (profile == null || profile.trim().isEmpty()) {
-                profile = ENV_DIR + DEFAULT_ENV;
+                profile = FileConfig.ENV_DIR + FileConfig.DEFAULT_ENV;
             }
 
             try (InputStream is = Thread.currentThread()
                     .getContextClassLoader()
-                    .getResourceAsStream(ENV_DIR + profile)) {
+                    .getResourceAsStream(FileConfig.ENV_DIR + profile)) {
 
                 if (is == null) {
                     throw new RuntimeException("Env config not found: " + profile);
@@ -43,10 +42,16 @@ public class ConfigUtil {
     }
 
     public static String getEnv(String key) {
+        String sysValue = System.getProperty(key);
+        if (sysValue != null && !sysValue.trim().isEmpty()) {
+            return sysValue.trim();
+        }
+
         String value = envProps.getProperty(key);
         if (value == null) {
             throw new RuntimeException("Missing env key: " + key);
         }
+
         return value.trim();
     }
 
@@ -54,7 +59,7 @@ public class ConfigUtil {
         return envProps.containsKey(key);
     }
 
-    public static String get(String fileName, String key) {
+    public static String get(String key, String fileName) {
         Properties props = propsCache.computeIfAbsent(fileName, ConfigUtil::loadFile);
         String value = props.getProperty(key);
 

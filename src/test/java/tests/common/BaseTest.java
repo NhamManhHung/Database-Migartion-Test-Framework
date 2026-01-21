@@ -4,8 +4,8 @@ import auto.framework.helpers.PrimaryKeyExportHelper;
 import auto.framework.integration.IJiraService;
 import auto.framework.integration.IntegrationProvider;
 import auto.framework.integration.IZephyrService;
-import auto.framework.models.dto.CountResult;
 import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.models.enums.FileConfig;
 import auto.framework.models.enums.TestcaseType;
 import auto.framework.reporting.DefectBuilder;
 import auto.framework.reporting.DefectRequest;
@@ -22,7 +22,6 @@ import java.util.Map;
 
 public class BaseTest {
 
-    private static final String CSV_FILE = "file/csv.properties";
 
     protected static Connection oracle;
     protected static Connection postgres;
@@ -48,7 +47,7 @@ public class BaseTest {
 
         zephyr = IntegrationProvider.zephyr();
         jira = IntegrationProvider.jira();
-        runKey = ConfigUtil.getEnv("zephyr.runKey");
+        runKey = ConfigUtil.getEnv("runKey");
 
         try {
             cycleIsExist = zephyr.isTestRunExist(runKey);
@@ -95,26 +94,23 @@ public class BaseTest {
     @AfterMethod(alwaysRun = true)
     public void afterMethod(ITestResult result) {
         System.out.println("cycleIsExist: " + cycleIsExist);
+        Object[] params = result.getParameters();
 
-        TableInfoCSV tableInfoCSV = (TableInfoCSV) result.getAttribute("TABLE_INFO");
-        String testCaseKey = tableInfoCSV.getTcKeyCount();
+        String testType = result.getMethod().getDescription();
+        TableInfoCSV table = (TableInfoCSV) params[0];
+        String testCaseKey = switch (testType) {
+            case TestcaseType.COUNT -> table.getTcKeyCount();
+            case TestcaseType.DUPLICATE -> table.getTcKeyDuplicate();
+            case TestcaseType.KEY_MATCHING -> table.getTcKeyMatching();
+            default -> throw new RuntimeException("Unknown test case type: " + testType);
+        };
+
         if (result.getStatus() == ITestResult.FAILURE) {
-
-            TestcaseType type =
-                    (TestcaseType) result.getAttribute("COMPARE_TYPE");
-
-            if (type == null) {
-                type = TestcaseType.KEY_MATCHING;
-            }
-
-            CountResult detail =
-                    (CountResult) result.getAttribute("COMPARE_DETAIL");
-
             DefectRequest req = DefectBuilder.build(
-                    type,
-                    tableInfoCSV.getTableName(),
-                    detail,
-                    ConfigUtil.getEnv("zephyr.epic.cds")
+                    testType,
+                    table.getTableName(),
+                    result.getAttribute(TestcaseType.DETAIL_DATA),
+                    ConfigUtil.getEnv("zephyr.epic")
             );
 
             String defectKey = jira.createDefect(req);
@@ -123,7 +119,8 @@ public class BaseTest {
                     runKey,
                     testCaseKey,
                     "Fail",
-                    defectKey
+                    defectKey,
+                    req
             );
 
         } else {
@@ -132,6 +129,7 @@ public class BaseTest {
                     runKey,
                     testCaseKey,
                     "Pass",
+                    null,
                     null
             );
         }
@@ -143,8 +141,7 @@ public class BaseTest {
         Map<String, List<String>> detectedPk =
                 PrimaryKeyExportHelper.getAll();
 
-        String dataFile = ConfigUtil
-                .get(CSV_FILE, "report.path")
+        String dataFile = FileConfig.REPORT_PATH
                 .replace("{path}", "MBF_CDS.csv");
 
         CsvUtil.exportResolvedPkCsv(

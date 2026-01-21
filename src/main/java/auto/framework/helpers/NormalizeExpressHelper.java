@@ -22,7 +22,7 @@ public class NormalizeExpressHelper {
 
             String rule = RuleConfigHelper.getRule(dbType, typeName);
 
-            //System.out.println(col + "------" + typeName + "--------" + rule);
+            //System.out.println(col + "------" + typeName + "--------" + config);
 
             String expr = rule.replace("{col}", col);
 
