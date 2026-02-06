@@ -1,14 +1,15 @@
 package auto.framework.integration;
 
-import auto.framework.models.dto.HttpResponse;
+import auto.framework.models.connection.HttpResponse;
 import auto.framework.models.enums.FileConfig;
-import auto.framework.reporting.DefectRequest;
+import auto.framework.models.connection.DefectRequest;
 import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.HttpClientUtil;
 import auto.framework.utils.JsonUtil;
 import auto.framework.utils.LogUtil;
 
 import java.io.File;
+import java.util.List;
 
 public class JiraService implements IJiraService {
 
@@ -60,23 +61,45 @@ public class JiraService implements IJiraService {
     }
 
     @Override
-    public void attachFile(String defectKey, File file) {
-        try {
-            String url = ConfigUtil.get(
-                    "jira.post.attachment.url",
-                    FileConfig.APPLICATION_FILE
-            ).replace("{{issueKey}}", issueKey);
+    public void attachFiles(String defectKey, List<String> filePaths, String fieldName) {
 
-            HttpClientUtil.postMultipart(
+        if (filePaths == null || filePaths.isEmpty()) {
+            LogUtil.warn("File list is empty. Skip attachment for issue " + defectKey);
+            return;
+        }
+
+        String url = ConfigUtil.get(
+                "jira.post.issue.file.url",
+                FileConfig.APPLICATION_FILE
+        ).replace("{issueKey}", defectKey);
+
+        try {
+            HttpResponse res = HttpClientUtil.postMultipart(
                     url,
                     token,
-                    file
+                    fieldName,
+                    filePaths
             );
 
+            if (res.getStatus() == 200 || res.getStatus() == 201) {
+                LogUtil.info(
+                        "Upload file success -> issue " + defectKey
+                );
+            } else {
+                LogUtil.error(
+                        "Upload file failed | Status=" + res.getStatus()
+                );
+                LogUtil.error("Response body: " + res.getBody());
+            }
+
         } catch (Exception e) {
-            LogUtil.error("Attach file failed: " + e.getMessage());
+            LogUtil.error(
+                    "Exception when uploading file | " + e.getMessage()
+            );
         }
+
     }
+
 
     private static String buildLabelsJson(String labelsProp) {
         if (labelsProp == null || labelsProp.trim().isEmpty()) {

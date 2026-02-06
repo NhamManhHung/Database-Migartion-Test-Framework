@@ -1,21 +1,22 @@
 package tests.testdata;
 
-import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.models.csv.AppDataCsv;
+import auto.framework.models.enums.FileConfig;
+import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.CsvUtil;
 import org.testng.annotations.DataProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.List;
 
 public class MigrationDataProvider {
     @DataProvider(name = "tableMigrationProvider")
     public static Object[][] tableMigrationProvider() throws IOException {
-        CsvUtil<TableInfoCSV> csv = new CsvUtil<>(TableInfoCSV.class);
-        List<TableInfoCSV> tables;
+        CsvUtil<AppDataCsv> csv = new CsvUtil<>(AppDataCsv.class);
+        List<AppDataCsv> tables;
         try (InputStream is = MigrationDataProvider.class.getClassLoader()
-                .getResourceAsStream("data/MBF_CDS.csv")) {
+                .getResourceAsStream(FileConfig.ALL_TABLE_DATA_PATH.replace("{app}", ConfigUtil.getEnv("app.name")))) {
             tables = csv.read(is);
         }
 

@@ -1,6 +1,6 @@
 package auto.framework.utils;
 
-import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.models.csv.AppDataCsv;
 import com.opencsv.CSVWriter;
 import com.opencsv.bean.*;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
@@ -155,7 +155,7 @@ public class CsvUtil<T> {
     }
     public static void exportResolvedPkCsv(
             String outputPath,
-            List<TableInfoCSV> tables,
+            List<AppDataCsv> tables,
             Map<String, List<String>> detectedPk
     ) {
 
@@ -164,7 +164,7 @@ public class CsvUtil<T> {
                              new FileOutputStream(outputPath),
                              StandardCharsets.UTF_8)) {
 
-            Class<TableInfoCSV> type = TableInfoCSV.class;
+            Class<AppDataCsv> type = AppDataCsv.class;
 
             Field[] fields = type.getDeclaredFields();
             String[] columnOrder = Arrays.stream(fields)
@@ -177,23 +177,23 @@ public class CsvUtil<T> {
             ));
             writer.write("\n");
 
-            ColumnPositionMappingStrategy<TableInfoCSV> strategy =
+            ColumnPositionMappingStrategy<AppDataCsv> strategy =
                     new ColumnPositionMappingStrategy<>();
             strategy.setType(type);
             strategy.setColumnMapping(columnOrder);
 
-            StatefulBeanToCsv<TableInfoCSV> beanToCsv =
-                    new StatefulBeanToCsvBuilder<TableInfoCSV>(writer)
+            StatefulBeanToCsv<AppDataCsv> beanToCsv =
+                    new StatefulBeanToCsvBuilder<AppDataCsv>(writer)
                             .withMappingStrategy(strategy)
                             .withSeparator(CSVWriter.DEFAULT_SEPARATOR)
                             .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
                             .build();
 
-            List<TableInfoCSV> resolvedRows = new ArrayList<>();
+            List<AppDataCsv> resolvedRows = new ArrayList<>();
 
-            for (TableInfoCSV row : tables) {
+            for (AppDataCsv row : tables) {
 
-                TableInfoCSV copy = new TableInfoCSV();
+                AppDataCsv copy = new AppDataCsv();
                 copy.setTcKeyCount(row.getTcKeyCount());
                 copy.setTcKeyDuplicate(row.getTcKeyDuplicate());
                 copy.setTcKeyMatching(row.getTcKeyMatching());

@@ -1,6 +1,6 @@
 package auto.framework;
 
-import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.models.csv.AppDataCsv;
 import auto.framework.utils.CsvUtil;
 
 import java.util.*;
@@ -32,9 +32,9 @@ public class MainDB {
 //        DbUtil.compareHash(type1Oracle, type1Postgres, "test_types1");
 
 
-        CsvUtil<TableInfoCSV> csv = new CsvUtil<>(TableInfoCSV.class);
-        List<TableInfoCSV> list = csv.read("src/main/resources/MBF_CDS.csv");
-        for (TableInfoCSV table : list) {
+        CsvUtil<AppDataCsv> csv = new CsvUtil<>(AppDataCsv.class);
+        List<AppDataCsv> list = csv.read("");
+        for (AppDataCsv table : list) {
             System.out.println(table);
         }
 

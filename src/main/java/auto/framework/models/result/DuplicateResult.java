@@ -1,4 +1,4 @@
-package auto.framework.models.dto;
+package auto.framework.models.result;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DuplicateResult {
     private String tableName;
-    private int duplicateInOracle;
-    private int duplicateInPostgres;
+    private int duplicateInSource;
+    private int duplicateInTarget;
 }

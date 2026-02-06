@@ -1,5 +1,8 @@
 package auto.framework.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -33,6 +36,19 @@ public class JsonUtil {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+    public static String parseId(String jsonResponse, String fieldName) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode json = mapper.readTree(jsonResponse);
+            if (json.has(fieldName)) {
+                return json.get(fieldName).asText();
+            }
+            return null;
+        } catch (Exception e) {
+            LogUtil.error("Failed to parse " + fieldName + " from response: " + e.getMessage());
+            return null;
+        }
     }
 }
 

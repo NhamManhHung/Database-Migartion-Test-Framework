@@ -1,17 +1,27 @@
 package auto.framework.integration;
 
-import auto.framework.reporting.DefectRequest;
+import auto.framework.models.connection.DefectRequest;
+
+import java.util.List;
 
 public interface IZephyrService {
 
     boolean isTestRunExist(String runKey);
 
-    void reportResult(
+    String reportResult(
             String runKey,
             String testCaseKey,
             String status,
             String defectKey,
             DefectRequest req
+    );
+
+    void attachFiles(
+            String runKey,
+            String testCaseKey,
+            String testResultId,
+            List<String> filePaths,
+            String fieldName
     );
 }
 

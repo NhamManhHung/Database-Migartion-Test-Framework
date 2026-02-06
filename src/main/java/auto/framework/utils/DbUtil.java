@@ -1,7 +1,10 @@
 package auto.framework.utils;
 
 import auto.framework.helpers.RuleConfigHelper;
-import auto.framework.models.dto.DataCSV;
+import auto.framework.models.connection.ConnectionData;
+import auto.framework.models.csv.DuplicateReportCSV;
+import auto.framework.models.csv.TableDataCsv;
+import auto.framework.models.csv.TableDataCsv;
 import auto.framework.models.enums.DbType;
 import auto.framework.helpers.DbMetaHelper;
 import auto.framework.models.enums.FileConfig;
@@ -15,13 +18,9 @@ public class DbUtil {
     /**
      * CONNECTION
      */
-    public static Connection oracle(String url, String user, String pass) throws Exception {
-        Class.forName("oracle.jdbc.OracleDriver");
-        return DriverManager.getConnection(url, user, pass);
-    }
 
-    public static Connection postgres(String url, String user, String pass) throws Exception {
-        Class.forName("org.postgresql.Driver");
+    public static Connection connectDb(String url, String user, String pass, String className) throws Exception {
+        Class.forName(className);
         return DriverManager.getConnection(url, user, pass);
     }
 
@@ -51,67 +50,29 @@ public class DbUtil {
         );
     }
 
-    /**
-     * CORE HASH QUERY
-     */
-//    public static Map<String, String> queryToHashMap(
-//            Connection conn,
-//            String table,
-//            String pkColumns
-//    ) throws Exception {
-//
-//        DbType dbType = DbType.from(conn);
-//        RuleConfigHelper.loadRules();
-//
-//        List<String> pkList = DbMetaHelper.resolvePk(conn, table, pkColumns);
-//        List<String> normalized = DbMetaHelper.detectNormalizedColumns(conn, table, dbType, pkList);
-//
-//        String sql = buildHashQuery(table, pkList, normalized, dbType);
-//
-//        Map<String, String> result = new HashMap<>();
-//        List<DataCSV> csvData = new ArrayList<>();
-//
-//        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-//            ps.setFetchSize(dbType == DbType.ORACLE ? 5_000 : 10_000);
-//
-//            try (ResultSet rs = ps.executeQuery()) {
-//                while (rs.next()) {
-//                    String id = DbMetaHelper.buildCompositeKey(rs, pkList);
-//                    String hash = normalized.isEmpty() ? "null" : rs.getString("h").toLowerCase();
-//                    String expr = normalized.isEmpty() ? "null" : rs.getString("expr_debug");
-//
-//                    result.put(id, hash);
-//                    csvData.add(new DataCSV(id, hash, expr));
-//                }
-//            }
-//        }
-//
-//        new CsvUtil<>(DataCSV.class)
-//                .write("log/" + dbType.name().toLowerCase() + "_" + table + ".csv", csvData);
-//
-//        return result;
-//    }
     public static Map<String, String> queryToHashMap(
-            Connection conn,
+            ConnectionData conn,
             String table,
             String pkColumns
     ) throws Exception {
 
-        DbType dbType = DbType.from(conn);
+        DbType dbType = DbType.from(conn.getConnection());
         RuleConfigHelper.loadRules();
 
-        List<String> pkList = DbMetaHelper.resolvePk(conn, table, pkColumns);
+        List<String> pkList = DbMetaHelper.resolvePk(conn.getConnection(), table, pkColumns);
 
-        List<String> normalized = DbMetaHelper.detectNormalizedColumns(conn, table, dbType, pkList);
+        List<String> normalized = DbMetaHelper.detectNormalizedColumns(conn.getConnection(), table, dbType, pkList);
 
         String sql = buildHashQuery(table, pkList, normalized, dbType);
 
         Map<String, String> result = new HashMap<>();
-        String dataFile = FileConfig.REPORT_PATH.replace("{path}", table.toUpperCase() + "_" + dbType.name() + ".csv");
+        String dataFile = FileConfig.TABLE_DATA_REPORT
+                .replace("{table}", table.toUpperCase())
+                .replace("{role}", conn.getDbRole().toString().toUpperCase());
 
         try (
-                CsvStreamWriter<DataCSV> csv = new CsvStreamWriter<>(dataFile, DataCSV.class, ',', 10000);
-                PreparedStatement ps = conn.prepareStatement(
+                CsvStreamWriter<TableDataCsv> csv = new CsvStreamWriter<>(dataFile, TableDataCsv.class, ',', 10000);
+                PreparedStatement ps = conn.getConnection().prepareStatement(
                         sql,
                         ResultSet.TYPE_FORWARD_ONLY,
                         ResultSet.CONCUR_READ_ONLY
@@ -126,19 +87,19 @@ public class DbUtil {
                     String expr = normalized.isEmpty() ? "null" : rs.getString("expr_debug");
 
                     result.put(id, hash);
-                    csv.write(new DataCSV(id, hash, expr));
+                    csv.write(new TableDataCsv(id, hash, expr));
                 }
             }
         }
-
+        System.out.println("abc: " + result.size());
         return result;
     }
 
 
-    public static int queryCount(Connection conn, String table) throws Exception {
+    public static int queryCount(ConnectionData conn, String table) throws Exception {
         String sql = "SELECT COUNT(*) AS cnt FROM " + table;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = conn.getConnection().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt("cnt");
@@ -149,12 +110,13 @@ public class DbUtil {
     }
 
     public static List<String> queryDuplicateKeys(
-            Connection conn,
+            ConnectionData conn,
             String table,
             String pkColumns
     ) throws Exception {
+        DbType dbType = DbType.from(conn.getConnection());
         List<String> pkList = pkColumns.equalsIgnoreCase("null")
-                ? DbMetaHelper.getPrimaryKeyColumns(conn, table)
+                ? DbMetaHelper.getPrimaryKeyColumns(conn.getConnection(), table)
                 : DbMetaHelper.parsePk(pkColumns);
 
         String pks = String.join(", ", pkList);
@@ -164,11 +126,28 @@ public class DbUtil {
         );
         List<String> duplicates = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        String dataFile = FileConfig.DUPLICATE_REPORT
+                .replace("{table}", table.toUpperCase())
+                .replace("{role}", conn.getDbRole().toString().toUpperCase());
 
-            while (rs.next()) {
-                duplicates.add(DbMetaHelper.buildCompositeKey(rs, pkList));
+        try (
+                CsvStreamWriter<DuplicateReportCSV> csv = new CsvStreamWriter<>(dataFile, DuplicateReportCSV.class, ',', 10000);
+                PreparedStatement ps = conn.getConnection().prepareStatement(
+                        sql,
+                        ResultSet.TYPE_FORWARD_ONLY,
+                        ResultSet.CONCUR_READ_ONLY
+                )
+        ) {
+            ps.setFetchSize(dbType == DbType.ORACLE ? 5_000 : 10_000);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String id = DbMetaHelper.buildCompositeKey(rs, pkList);
+                    int count = rs.getInt("cnt");
+                    csv.write(new DuplicateReportCSV(id, count));
+                    duplicates.add(id);
+                }
+
             }
         }
 

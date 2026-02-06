@@ -105,6 +105,13 @@
             <artifactId>httpmime</artifactId>
             <version>4.5.13</version>
         </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.20.1</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
     <build>

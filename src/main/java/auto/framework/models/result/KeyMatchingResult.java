@@ -1,4 +1,4 @@
-package auto.framework.models.dto;
+package auto.framework.models.result;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class KeyMatchingResult {
     private String tableName;
-    private int totalOracle;
-    private int totalPostgres;
-    private int missingInOracle;
-    private int missingInPostgres;
+    private int totalSource;
+    private int totalTarget;
+    private int missingInSource;
+    private int missingInTarget;
     private int mismatch;
 }

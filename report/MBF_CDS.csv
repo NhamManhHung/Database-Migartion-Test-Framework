@@ -1,3 +1,0 @@
-tcKeyCount,tcKeyDuplicate,tcKeyMatching,tableName,primaryKeyColumn
-TC_COUNT_001,TC_DUP_001,TC_HASH_001,new_rule_test,col_float
-TC_COUNT_009,TC_DUP_009,TC_HASH_009,new_rule_test,col_number

@@ -1,12 +1,14 @@
 package auto.framework.integration;
 
-import auto.framework.models.dto.HttpResponse;
+import auto.framework.models.connection.HttpResponse;
 import auto.framework.models.enums.FileConfig;
-import auto.framework.reporting.DefectRequest;
+import auto.framework.models.connection.DefectRequest;
 import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.HttpClientUtil;
 import auto.framework.utils.JsonUtil;
 import auto.framework.utils.LogUtil;
+
+import java.util.List;
 
 public class ZephyrService implements IZephyrService {
 
@@ -33,7 +35,7 @@ public class ZephyrService implements IZephyrService {
     }
 
     @Override
-    public void reportResult(
+    public String reportResult(
             String runKey,
             String testCaseKey,
             String status,
@@ -62,14 +64,68 @@ public class ZephyrService implements IZephyrService {
                                     ? ""
                                     : JsonUtil.escape(defectKey))
                     .replace("{{description}}", defectKey != null
-                                    ? req.getDescription()
-                                    : "");
+                            ? req.getDescription()
+                            : "");
 
-            System.out.println("Zephyr TestResult Body:\n" + body);
-            HttpResponse res =
-                    HttpClientUtil.post(url, token, body);
+            HttpResponse res = HttpClientUtil.post(url, token, body);
+            if (res.getStatus() == 200 || res.getStatus() == 201) {
+                String testResultId = JsonUtil.parseId(res.getBody(), "id");
+                LogUtil.info("Test result created with ID: " + testResultId);
+                return testResultId;
+            } else {
+                LogUtil.error("Failed to create test result. Status: " + res.getStatus());
+                return null;
+            }
         } catch (Exception e) {
             LogUtil.error("Zephyr report exception: " + e.getMessage());
         }
+        return null;
+    }
+
+    @Override
+    public void attachFiles(
+            String runKey,
+            String testCaseKey,
+            String testResultId,
+            List<String> filePaths,
+            String fieldName
+    ) {
+
+        if (filePaths == null || filePaths.isEmpty()) {
+            LogUtil.warn("File list is empty. Skip attachment for issue " + testResultId);
+            return;
+        }
+
+        String url = ConfigUtil
+                .get("zephyr.post.result.file.url", FileConfig.APPLICATION_FILE)
+                .replace("{runKey}", runKey)
+                .replace("{testCaseKey}", testCaseKey)
+                .replace("{testResultId}", testResultId);
+
+        try {
+            HttpResponse res = HttpClientUtil.postMultipart(
+                    url,
+                    token,
+                    fieldName,
+                    filePaths
+            );
+
+            if (res.getStatus() == 200 || res.getStatus() == 201) {
+                LogUtil.info(
+                        "Upload file success -> issue " + testResultId
+                );
+            } else {
+                LogUtil.error(
+                        "Upload file failed | Status=" + res.getStatus()
+                );
+                LogUtil.error("Response body: " + res.getBody());
+            }
+
+        } catch (Exception e) {
+            LogUtil.error(
+                    "Exception when uploading file | " + e.getMessage()
+            );
+        }
+
     }
 }

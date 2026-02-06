@@ -1,4 +1,4 @@
-package auto.framework.models.dto;
+package auto.framework.models.csv;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TableInfoCSV {
+public class AppDataCsv {
     String tcKeyCount;
     String tcKeyDuplicate;
     String tcKeyMatching;

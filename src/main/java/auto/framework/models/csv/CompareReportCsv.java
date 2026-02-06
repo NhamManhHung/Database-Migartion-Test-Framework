@@ -1,4 +1,4 @@
-package auto.framework.models.dto;
+package auto.framework.models.csv;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReportCSV {
+public class CompareReportCsv {
     String id;
     String report;
 }

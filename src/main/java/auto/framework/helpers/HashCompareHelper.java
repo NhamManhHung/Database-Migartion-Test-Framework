@@ -1,10 +1,9 @@
 package auto.framework.helpers;
 
-import auto.framework.models.dto.CountResult;
-import auto.framework.models.dto.KeyMatchingResult;
-import auto.framework.models.dto.ReportCSV;
+import auto.framework.models.result.CountResult;
+import auto.framework.models.result.KeyMatchingResult;
+import auto.framework.models.csv.CompareReportCsv;
 import auto.framework.models.enums.FileConfig;
-import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.CsvUtil;
 
 import java.util.ArrayList;
@@ -17,60 +16,62 @@ public class HashCompareHelper {
      */
 
     public static KeyMatchingResult compareHash(
-            Map<String, String> oracle,
-            Map<String, String> postgres,
+            Map<String, String> source,
+            Map<String, String> target,
             String table
     ) throws Exception {
 
-        List<ReportCSV> report = new ArrayList<>();
+        List<CompareReportCsv> report = new ArrayList<>();
 
-        int missPg = 0, missOra = 0, mismatch = 0;
+        int missTarget = 0, missSource = 0, mismatch = 0;
 
-        for (String id : oracle.keySet()) {
-            if (!postgres.containsKey(id)) {
-                missPg++;
-                report.add(new ReportCSV(id, "MISSING IN POSTGRES"));
-            } else if (!oracle.get(id).equals(postgres.get(id))) {
+        for (String id : source.keySet()) {
+            if (!target.containsKey(id)) {
+                missTarget++;
+                report.add(new CompareReportCsv(id, "MISSING IN TARGET"));
+            } else if (!source.get(id).equals(target.get(id))) {
                 mismatch++;
-                report.add(new ReportCSV(id, "MISMATCH DATA"));
+                report.add(new CompareReportCsv(id, "MISMATCH DATA"));
             } else {
-                report.add(new ReportCSV(id, "PASSED"));
+                report.add(new CompareReportCsv(id, "PASSED"));
             }
         }
 
-        for (String id : postgres.keySet()) {
-            if (!oracle.containsKey(id)) {
-                missOra++;
-                report.add(new ReportCSV(id, "MISSING IN ORACLE"));
+        for (String id : target.keySet()) {
+            if (!source.containsKey(id)) {
+                missSource++;
+                report.add(new CompareReportCsv(id, "MISSING IN SOURCE"));
             }
         }
-        String dataFile = FileConfig.REPORT_PATH.replace("{path}", table + ".csv" );
-        new CsvUtil<>(ReportCSV.class)
+        String dataFile = FileConfig.COMPARE_REPORT
+                .replace("{table}", table.toUpperCase());
+
+        new CsvUtil<>(CompareReportCsv.class)
                 .write(dataFile, report);
 
         return new KeyMatchingResult(
                 table,
-                oracle.size(),
-                postgres.size(),
-                missOra,
-                missPg,
+                source.size(),
+                target.size(),
+                missSource,
+                missTarget,
                 mismatch
         );
     }
 
     public static CountResult compareCount(
-            int oracleCount,
-            int postgresCount,
+            int sourceCount,
+            int targetCount,
             String table
     ) throws Exception {
 
-        int missOra = Math.max(0, postgresCount - oracleCount);
-        int missPg = Math.max(0, oracleCount - postgresCount);
+        int missOra = Math.max(0, targetCount - sourceCount);
+        int missPg = Math.max(0, sourceCount - targetCount);
 
         return new CountResult(
                 table,
-                oracleCount,
-                postgresCount,
+                sourceCount,
+                targetCount,
                 missOra,
                 missPg
         );

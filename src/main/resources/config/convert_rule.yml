@@ -2,42 +2,13 @@ oracle:
   # Numeric types
   NUMBER: "NVL(TO_CHAR({col}), 'NULL')"
   FLOAT: "NVL(TO_CHAR({col}), 'NULL')"
-  #binary_float: "NVL(TRIM(TO_CHAR({col})), 'NULL')"
-  #binary_double: "NVL(TRIM(TO_CHAR({col})), 'NULL')"
-
-  # String types
-  # VARCHAR: "NVL(NULLIF(TRIM(TO_CHAR({col})), ''), 'NULL')"
-  # NVARCHAR: "NVL(NULLIF(TRIM(TO_CHAR({col})), ''), 'NULL')"
-  # CHAR: "NVL(NULLIF(TRIM(TO_CHAR({col})), ''), 'NULL')"
-  # NCHAR: "NVL(NULLIF(TRIM(TO_CHAR({col})), ''), 'NULL')"
-
-  # VARCHAR: "NVL(NULLIF(TRIM(REPLACE(REPLACE(TO_CHAR({col}), CHR(13)), CHR(10))), ''), 'NULL')"
-  # NVARCHAR: "NVL(NULLIF(TRIM(REPLACE(REPLACE(TO_CHAR({col}), CHR(13)), CHR(10))), ''), 'NULL')"
-  # CHAR: "NVL(NULLIF(TRIM(REPLACE(REPLACE(TO_CHAR({col}), CHR(13)), CHR(10))), ''), 'NULL')"
-  # NCHAR: "NVL(NULLIF(TRIM(REPLACE(REPLACE(TO_CHAR({col}), CHR(13)), CHR(10))), ''), 'NULL')"
-
-  # LOB types
-  # CLOB: "NVL(DBMS_LOB.SUBSTR({col}, 4000, 1), 'NULL')"
-  # NCLOB: "NVL(DBMS_LOB.SUBSTR({col}, 4000, 1), 'NULL')"
 
   # Binary types
   RAW: "NVL(UPPER(RAWTOHEX({col})), 'NULL')"
-  # long_raw: "NVL(UPPER(RAWTOHEX({col})), 'NULL')"
-  # blob: "NVL(UPPER(RAWTOHEX(DBMS_LOB.SUBSTR({col}, 2000, 1))), 'NULL')"
 
   # Date/Time types
   DATE: "NVL(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS'), 'NULL')"
   TIMESTAMP: "NVL(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS'), 'NULL')"
-  # timestamp_tz: "NVL(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS.FF6'), 'NULL')"
-  # timestamp_ltz: "NVL(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS.FF6'), 'NULL')"
-
-  # Interval types
-  # interval_ytm: "NVL(TO_CHAR({col}), 'NULL')"
-  # interval_dts: "NVL(TO_CHAR({col}), 'NULL')"
-
-  # Special types
-  # xmltype: "NVL(XMLTYPE.GETCLOBVAL({col}), 'NULL')"
-  # rowid: "NVL(ROWIDTOCHAR({col}), 'NULL')"
 
   default: "NVL(NULLIF(TRIM(REPLACE(REPLACE(TO_CHAR({col}), CHR(13)), CHR(10))), ''), 'NULL')"
 
@@ -49,28 +20,12 @@ postgres:
   REAL: "COALESCE(({col})::text, 'NULL')"
   FLOAT: "COALESCE(({col})::text, 'NULL')"
 
-  # String types
-  # VARCHAR: "COALESCE(NULLIF(TRIM({col}), ''), 'NULL')"
-  # CHAR: "COALESCE(NULLIF(TRIM({col}), ''), 'NULL')"
-  # TEXT: "COALESCE(NULLIF(TRIM({col}), ''), 'NULL')"
-
-  # VARCHAR: "COALESCE(NULLIF(TRIM(REPLACE(REPLACE({col}, E'\\r', ''), E'\\n', '')), ''), 'NULL')"
-  # CHAR: "COALESCE(NULLIF(TRIM(REPLACE(REPLACE({col}, E'\\r', ''), E'\\n', '')), ''), 'NULL')"
-  # TEXT: "COALESCE(NULLIF(TRIM(REPLACE(REPLACE({col}, E'\\r', ''), E'\\n', '')), ''), 'NULL')"
-
   # Binary types
   BYTEA: "COALESCE(UPPER(ENCODE({col}, 'hex')), 'NULL')"
   BOOL: "CASE WHEN {col} THEN '1' ELSE '0' END"
+
   # Date/Time types - DATE
   DATE: "COALESCE(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS'), 'NULL')"
   TIMESTAMP: "COALESCE(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS'), 'NULL')"
-  # timestamptz: "COALESCE(TO_CHAR({col}, 'YYYY-MM-DD HH24:MI:SS.US'), 'NULL')"
-
-  # Interval types
-  # interval: "COALESCE(({col})::text, 'NULL')"
-
-  # Special types
-  # xml: "COALESCE(({col})::text, 'NULL')"
-  # char18: "COALESCE({col}, 'NULL')"
 
   default: "COALESCE(NULLIF(TRIM(REPLACE(REPLACE(({col})::text, E'\\r', ''), E'\\n', '')), ''), 'NULL')"

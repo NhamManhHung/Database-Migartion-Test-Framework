@@ -1,7 +1,10 @@
 package tests.listener;
 
-import auto.framework.models.dto.*;
+import auto.framework.models.csv.*;
 import auto.framework.models.enums.TestcaseType;
+import auto.framework.models.result.CountResult;
+import auto.framework.models.result.DuplicateResult;
+import auto.framework.models.result.KeyMatchingResult;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
@@ -87,7 +90,7 @@ public class TestListener implements ITestListener {
         }
 
         Object param = params[0];
-        if (!(param instanceof TableInfoCSV table)) {
+        if (!(param instanceof AppDataCsv table)) {
             return null;
         }
 
@@ -104,27 +107,27 @@ public class TestListener implements ITestListener {
     public void logResultKeyMatching(KeyMatchingResult r) {
         System.out.println(
                 "\n[ "+ TestcaseType.KEY_MATCHING + " ] Table: " + r.getTableName() +
-                        "\n       Oracle rows     : " + r.getTotalOracle() +
-                        "\n       Postgres rows   : " + r.getTotalPostgres() +
-                        "\n       Mismatch        : " + r.getMismatch() +
-                        "\n       Missing Oracle  : " + r.getMissingInOracle() +
-                        "\n       Missing Postgres: " + r.getMissingInPostgres()
+                        "\n       Source rows   : " + r.getTotalSource() +
+                        "\n       Target rows   : " + r.getTotalTarget() +
+                        "\n       Mismatch      : " + r.getMismatch() +
+                        "\n       Missing Source: " + r.getMissingInSource() +
+                        "\n       Missing Target: " + r.getMissingInTarget()
         );
     }
 
     public void logResultDuplicates(DuplicateResult r) {
         System.out.println(
                 "\n[ "+ TestcaseType.DUPLICATE + " ] Table: " + r.getTableName() +
-                        "\n       Oracle duplicate count  : " + r.getDuplicateInOracle() +
-                        "\n       Postgres duplicate count: " + r.getDuplicateInPostgres()
+                        "\n       Source duplicate case: " + r.getDuplicateInSource() +
+                        "\n       Target duplicate case: " + r.getDuplicateInTarget()
         );
     }
 
     public void logResultCount(CountResult r) {
         System.out.println(
                 "\n[ "+ TestcaseType.COUNT + " ] Table: " + r.getTableName() +
-                        "\n       Oracle rows  : " + r.getTotalOracle() +
-                        "\n       Postgres rows: " + r.getTotalPostgres()
+                        "\n       Source rows: " + r.getTotalSource() +
+                        "\n       Target rows: " + r.getTotalTarget()
         );
     }
 }

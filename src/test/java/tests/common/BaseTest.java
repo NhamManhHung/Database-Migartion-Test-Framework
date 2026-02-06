@@ -2,30 +2,35 @@ package tests.common;
 
 import auto.framework.helpers.PrimaryKeyExportHelper;
 import auto.framework.integration.IJiraService;
-import auto.framework.integration.IntegrationProvider;
 import auto.framework.integration.IZephyrService;
-import auto.framework.models.dto.TableInfoCSV;
+import auto.framework.integration.IntegrationProvider;
+import auto.framework.models.connection.ConnectionData;
+import auto.framework.models.csv.AppDataCsv;
+import auto.framework.models.enums.DbRole;
+import auto.framework.models.enums.DbType;
 import auto.framework.models.enums.FileConfig;
 import auto.framework.models.enums.TestcaseType;
-import auto.framework.reporting.DefectBuilder;
-import auto.framework.reporting.DefectRequest;
+import auto.framework.helpers.DefectBuilderHelper;
+import auto.framework.models.connection.DefectRequest;
 import auto.framework.utils.ConfigUtil;
 import auto.framework.utils.CsvUtil;
 import auto.framework.utils.DbUtil;
+import auto.framework.utils.LogUtil;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
+import java.io.File;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class BaseTest {
 
-
-    protected static Connection oracle;
-    protected static Connection postgres;
-    protected static List<TableInfoCSV> tables;
+    protected static ConnectionData sourceDb;
+    protected static ConnectionData targetDb;
+    protected static List<AppDataCsv> tables;
 
     protected static boolean cycleIsExist;
     protected static String runKey;
@@ -37,10 +42,10 @@ public class BaseTest {
     @BeforeSuite(alwaysRun = true)
     public void beforeSuite() throws Exception {
 
-        CsvUtil<TableInfoCSV> csv = new CsvUtil<>(TableInfoCSV.class);
+        CsvUtil<AppDataCsv> csv = new CsvUtil<>(AppDataCsv.class);
         try (InputStream is = getClass()
                 .getClassLoader()
-                .getResourceAsStream("data/MBF_CDS.csv")) {
+                .getResourceAsStream(FileConfig.ALL_TABLE_DATA_PATH.replace("{app}", ConfigUtil.getEnv("app.name")))) {
 
             tables = csv.read(is);
         }
@@ -65,74 +70,21 @@ public class BaseTest {
         }
     }
 
-    /* ===================== DB SETUP ===================== */
-
     @BeforeTest(alwaysRun = true)
     public void setup() throws Exception {
+        Connection sourceConn = createConnection("source");
+        Connection targetConn = createConnection("target");
 
-        oracle = DbUtil.oracle(
-                ConfigUtil.getEnv("oracle.url"),
-                ConfigUtil.getEnv("oracle.user"),
-                ConfigUtil.getEnv("oracle.pass")
-        );
-
-        postgres = DbUtil.postgres(
-                ConfigUtil.getEnv("postgres.url"),
-                ConfigUtil.getEnv("postgres.user"),
-                ConfigUtil.getEnv("postgres.pass")
-        );
-    }
-
-    @AfterTest(alwaysRun = true)
-    public void tearDown() throws Exception {
-        if (oracle != null) oracle.close();
-        if (postgres != null) postgres.close();
+        sourceDb = new ConnectionData(sourceConn, DbRole.SOURCE);
+        targetDb = new ConnectionData(targetConn, DbRole.TARGET);
     }
 
     /* ===================== AFTER SUITE ===================== */
 
-    @AfterMethod(alwaysRun = true)
-    public void afterMethod(ITestResult result) {
-        System.out.println("cycleIsExist: " + cycleIsExist);
-        Object[] params = result.getParameters();
-
-        String testType = result.getMethod().getDescription();
-        TableInfoCSV table = (TableInfoCSV) params[0];
-        String testCaseKey = switch (testType) {
-            case TestcaseType.COUNT -> table.getTcKeyCount();
-            case TestcaseType.DUPLICATE -> table.getTcKeyDuplicate();
-            case TestcaseType.KEY_MATCHING -> table.getTcKeyMatching();
-            default -> throw new RuntimeException("Unknown test case type: " + testType);
-        };
-
-        if (result.getStatus() == ITestResult.FAILURE) {
-            DefectRequest req = DefectBuilder.build(
-                    testType,
-                    table.getTableName(),
-                    result.getAttribute(TestcaseType.DETAIL_DATA),
-                    ConfigUtil.getEnv("zephyr.epic")
-            );
-
-            String defectKey = jira.createDefect(req);
-
-            zephyr.reportResult(
-                    runKey,
-                    testCaseKey,
-                    "Fail",
-                    defectKey,
-                    req
-            );
-
-        } else {
-
-            zephyr.reportResult(
-                    runKey,
-                    testCaseKey,
-                    "Pass",
-                    null,
-                    null
-            );
-        }
+    @AfterTest(alwaysRun = true)
+    public void tearDown() throws Exception {
+        if (sourceDb.getConnection() != null) sourceDb.getConnection().close();
+        if (targetDb.getConnection() != null) targetDb.getConnection().close();
     }
 
     @AfterSuite(alwaysRun = true)
@@ -141,8 +93,8 @@ public class BaseTest {
         Map<String, List<String>> detectedPk =
                 PrimaryKeyExportHelper.getAll();
 
-        String dataFile = FileConfig.REPORT_PATH
-                .replace("{path}", "MBF_CDS.csv");
+        String dataFile = FileConfig.ALL_TABLE_DATA_REPORT
+                .replace("{app}", ConfigUtil.getEnv("app.name"));
 
         CsvUtil.exportResolvedPkCsv(
                 dataFile,
@@ -150,4 +102,104 @@ public class BaseTest {
                 detectedPk
         );
     }
+
+    @AfterMethod(alwaysRun = true)
+    public void afterMethod(ITestResult result) {
+        System.out.println("cycleIsExist: " + cycleIsExist);
+
+        AppDataCsv table = (AppDataCsv) result.getParameters()[0];
+        String testType = result.getMethod().getDescription();
+
+        String testCaseKey = getTestCaseKey(table, testType);
+        List<String> filePaths = getFilePaths(table, testType);
+
+        if (result.getStatus() == ITestResult.FAILURE) {
+            handleTestFailure(result, testType, table, testCaseKey, filePaths);
+        } else {
+            reportTestSuccess(testCaseKey);
+        }
+    }
+
+    private String getTestCaseKey(AppDataCsv table, String testType) {
+        return switch (testType) {
+            case TestcaseType.COUNT -> table.getTcKeyCount();
+            case TestcaseType.DUPLICATE -> table.getTcKeyDuplicate();
+            case TestcaseType.KEY_MATCHING -> table.getTcKeyMatching();
+            default -> throw new RuntimeException("Unknown test case type: " + testType);
+        };
+    }
+
+    private List<String> getFilePaths(AppDataCsv table, String testType) {
+        List<String> filePaths = new ArrayList<>();
+
+        switch (testType) {
+            case TestcaseType.DUPLICATE:
+                filePaths.add(
+                        FileConfig.DUPLICATE_REPORT
+                                .replace("{table}", table.getTableName().toUpperCase())
+                                .replace("{role}", sourceDb.getDbRole().toString().toUpperCase()));
+                filePaths.add(
+                        FileConfig.DUPLICATE_REPORT
+                                .replace("{table}", table.getTableName().toUpperCase())
+                                .replace("{role}", targetDb.getDbRole().toString().toUpperCase()));
+                break;
+            case TestcaseType.KEY_MATCHING:
+                filePaths.add(FileConfig.COMPARE_REPORT.replace("{table}", table.getTableName().toUpperCase()));
+//                filePaths.add(FileConfig.TABLE_DATA_REPORT.replace("{table}", table.getTableName().toUpperCase()).replace("{role}", sourceDb.getDbRole().toString().toUpperCase()));
+//                filePaths.add(FileConfig.TABLE_DATA_REPORT.replace("{table}", table.getTableName().toUpperCase()).replace("{role}", targetDb.getDbRole().toString().toUpperCase()));
+                break;
+        }
+
+        return filePaths;
+    }
+
+    private void handleTestFailure(ITestResult result, String testType, AppDataCsv table,
+                                   String testCaseKey, List<String> filePaths) {
+        DefectRequest req = DefectBuilderHelper.build(
+                testType,
+                table.getTableName(),
+                result.getAttribute(TestcaseType.DETAIL_DATA),
+                ConfigUtil.getEnv("zephyr.epic")
+        );
+
+        //Handle jira defect and attachments
+        String defectKey = jira.createDefect(req);
+        jira.attachFiles(defectKey, filePaths, "file");
+
+
+        //Handle zephyr test result and attachments
+        String testResultId = zephyr.reportResult(runKey, testCaseKey, "Fail", defectKey, req);
+        List<String> fileList = new ArrayList<>();
+        fileList.add(FileConfig.COMPARE_REPORT.replace("{table}", table.getTableName().toUpperCase()));
+        fileList.add(FileConfig.TABLE_DATA_REPORT.replace("{table}", table.getTableName().toUpperCase()).replace("{role}", sourceDb.getDbRole().toString().toUpperCase()));
+        fileList.add(FileConfig.TABLE_DATA_REPORT.replace("{table}", table.getTableName().toUpperCase()).replace("{role}", targetDb.getDbRole().toString().toUpperCase()));
+        if (testResultId != null && !testResultId.isEmpty()) {
+            zephyr.attachFiles(runKey, testCaseKey, testResultId, fileList, "file");
+        } else {
+            LogUtil.error("Cannot attach files to Zephyr: testResultId is null");
+        }
+    }
+
+    private void reportTestSuccess(String testCaseKey) {
+        zephyr.reportResult(runKey, testCaseKey, "Pass", null, null);
+    }
+
+    private Connection createConnection(String prefix) throws Exception {
+        String type = ConfigUtil.getEnv(prefix + ".type");
+        String url = ConfigUtil.getEnv(prefix + ".url");
+        String user = ConfigUtil.getEnv(prefix + ".user");
+        String pass = ConfigUtil.getEnv(prefix + ".pass");
+
+        return switch (type.toUpperCase()) {
+            case "ORACLE" ->
+                    DbUtil.connectDb(url, user, pass, ConfigUtil.get("oracle.driver", FileConfig.APPLICATION_FILE));
+            case "POSTGRES" ->
+                    DbUtil.connectDb(url, user, pass, ConfigUtil.get("postgres.driver", FileConfig.APPLICATION_FILE));
+            default -> {
+                System.out.println("Unknown database type: " + type);
+                yield null;
+            }
+        };
+    }
+
 }

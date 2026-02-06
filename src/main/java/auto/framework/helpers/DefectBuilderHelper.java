@@ -1,10 +1,11 @@
-package auto.framework.reporting;
+package auto.framework.helpers;
 
-import auto.framework.models.dto.CountResult;
+import auto.framework.models.connection.DefectRequest;
+import auto.framework.models.result.CountResult;
 import auto.framework.models.enums.TestcaseType;
 import auto.framework.utils.ConfigUtil;
 
-public class DefectBuilder {
+public class DefectBuilderHelper {
 
     public static DefectRequest build(
             String type,
@@ -23,8 +24,8 @@ public class DefectBuilder {
                 summary = prefix + " record count is mismatch";
 
                 yield prefix +
-                        "\nSource = " + data.getTotalOracle() +
-                        "\nTarget = " + data.getTotalPostgres();
+                        "\nSource = " + data.getTotalSource() +
+                        "\nTarget = " + data.getTotalTarget();
             }
 
             case TestcaseType.DUPLICATE -> {

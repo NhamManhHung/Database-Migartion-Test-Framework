@@ -1,4 +1,4 @@
-package auto.framework.reporting;
+package auto.framework.models.connection;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

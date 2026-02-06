@@ -1,10 +1,10 @@
 package auto.framework.integration;
 
-import auto.framework.reporting.DefectRequest;
+import auto.framework.models.connection.DefectRequest;
 
-import java.io.File;
+import java.util.List;
 
 public interface IJiraService {
     String createDefect(DefectRequest request);
-    void attachFile (String defectKey, File file);
+    void attachFiles(String defectKey, List<String> filePaths, String fieldName);
 }

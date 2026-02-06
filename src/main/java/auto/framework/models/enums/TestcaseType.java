@@ -6,5 +6,4 @@ public class TestcaseType {
     public static final String DUPLICATE = "DUPLICATE";
 
     public static final String DETAIL_DATA = "DETAIL_DATA";
-    public static final String TABLE_INFO = "TABLE_INFO";
 }
