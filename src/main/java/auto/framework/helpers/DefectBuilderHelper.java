@@ -14,9 +14,16 @@ public class DefectBuilderHelper {
             String epicKey) {
         String appName = ConfigUtil.getEnv("app.name");
         String summary;
+        String description;
         String prefix = appName + ": " + table;
 
-        String description = switch (type) {
+        if (detailData == null) {
+            description = prefix + ": is not existed";
+            summary = description;
+            return new DefectRequest(summary, description, epicKey);
+        }
+
+        description = switch (type) {
 
             case TestcaseType.COUNT -> {
                 CountResult data = (CountResult) detailData;
@@ -24,8 +31,8 @@ public class DefectBuilderHelper {
                 summary = prefix + " record count is mismatch";
 
                 yield prefix +
-                        "\nSource = " + data.getTotalSource() +
-                        "\nTarget = " + data.getTotalTarget();
+                        ". Source = " + data.getTotalSource() +
+                        ". Target = " + data.getTotalTarget();
             }
 
             case TestcaseType.DUPLICATE -> {
@@ -44,4 +51,6 @@ public class DefectBuilderHelper {
 
         return new DefectRequest(summary, description, epicKey);
     }
+
+
 }

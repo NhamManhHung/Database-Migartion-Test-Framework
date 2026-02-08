@@ -9,6 +9,8 @@ import auto.framework.utils.JsonUtil;
 import auto.framework.utils.LogUtil;
 
 import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class JiraService implements IJiraService {
@@ -16,10 +18,46 @@ public class JiraService implements IJiraService {
     private final String token =
             ConfigUtil.get("jira.auth.token", FileConfig.APPLICATION_FILE);
 
+    private String getExistingOpenDefect(String summary) {
+        try {
+            String baseUrl = ConfigUtil.get("jira.search.issue.url", FileConfig.APPLICATION_FILE);
+
+            String jql = String.format("summary ~ \"\\\"%s\\\"\" AND statusCategory != Done ORDER BY created DESC", summary);
+
+            String url = baseUrl + "?jql=" + URLEncoder.encode(jql, StandardCharsets.UTF_8.toString()) + "&maxResults=1";
+
+            HttpResponse res = HttpClientUtil.get(url, token);
+
+            if (res.getStatus() == 200) {
+                String body = res.getBody();
+                if (body.contains("\"total\":0")) {
+                    return null;
+                }
+
+                int idx = body.indexOf("\"key\"");
+                if (idx > 0) {
+                    int start = body.indexOf("\"", idx + 6) + 1;
+                    int end = body.indexOf("\"", start);
+                    return body.substring(start, end);
+                }
+            }
+        } catch (Exception e) {
+            LogUtil.error(e.getMessage());
+        }
+        return null;
+    }
+
     @Override
     public String createDefect(DefectRequest req) {
 
         try {
+
+            String existingKey = getExistingOpenDefect(req.getSummary());
+            if (existingKey != null) {
+                LogUtil.info("Defect OPEN: " + existingKey + ". Skip create new defect");
+                return existingKey;
+            }
+
             String url = ConfigUtil.get("jira.post.issue.url", FileConfig.APPLICATION_FILE);
 
             String template =
@@ -37,7 +75,7 @@ public class JiraService implements IJiraService {
                             JsonUtil.escape(req.getEpicLink()))
                     .replace("\"{{labels}}\"", labelsJson);
 
-            System.out.println("Jira Issue Body:\n" + body);
+            //System.out.println("Jira Issue Body:\n" + body);
 
             HttpResponse res =
                     HttpClientUtil.post(url, token, body);

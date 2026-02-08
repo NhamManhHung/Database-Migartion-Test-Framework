@@ -47,12 +47,8 @@ public class ConfigUtil {
             return sysValue.trim();
         }
 
-        String value = envProps.getProperty(key);
-        if (value == null) {
-            throw new RuntimeException("Missing env key: " + key);
-        }
-
-        return value.trim();
+        String envValue = envProps.getProperty(key);
+        return envValue != null ? envValue.trim() : null;
     }
 
     public static boolean hasEnv(String key) {

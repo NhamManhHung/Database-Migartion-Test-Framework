@@ -91,7 +91,6 @@ public class DbUtil {
                 }
             }
         }
-        System.out.println("abc: " + result.size());
         return result;
     }
 
@@ -152,6 +151,30 @@ public class DbUtil {
         }
 
         return duplicates;
+    }
+
+    public static List<String> getSourceSchemaTables(ConnectionData conn) throws SQLException {
+        List<String> tables = new ArrayList<>();
+
+        String sql =
+                "SELECT t.owner, t.table_name " +
+                        "FROM all_tables t " +
+                        "JOIN all_users u ON t.owner = u.username " +
+                        "WHERE t.table_name NOT LIKE 'BIN$%' " +
+                        "AND u.oracle_maintained = 'N'";
+
+        try (PreparedStatement stmt = conn.getConnection().prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String schema = rs.getString("owner");
+                String table = rs.getString("table_name");
+
+                tables.add(schema + "." + table);
+            }
+        }
+
+        return tables;
     }
 
 

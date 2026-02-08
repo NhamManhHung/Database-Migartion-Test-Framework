@@ -5,11 +5,13 @@ import auto.framework.models.enums.TestcaseType;
 import auto.framework.models.result.CountResult;
 import auto.framework.models.result.DuplicateResult;
 import auto.framework.models.result.KeyMatchingResult;
+import auto.framework.models.result.TableCompareResult;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TestListener implements ITestListener {
@@ -40,6 +42,7 @@ public class TestListener implements ITestListener {
 
         } else if (detail instanceof DuplicateResult) {
             logResultDuplicates((DuplicateResult) detail);
+
         }
 
     }
@@ -85,13 +88,14 @@ public class TestListener implements ITestListener {
 
         Object[] params = result.getParameters();
         String testType = result.getMethod().getDescription();
+
         if (params == null || params.length == 0) {
-            return null;
+            return result.getMethod().getMethodName() + " | " + testType;
         }
 
         Object param = params[0];
         if (!(param instanceof AppDataCsv table)) {
-            return null;
+            return result.getMethod().getMethodName() + " | " + testType;
         }
 
         String tcKey = switch (testType) {
@@ -106,7 +110,7 @@ public class TestListener implements ITestListener {
 
     public void logResultKeyMatching(KeyMatchingResult r) {
         System.out.println(
-                "\n[ "+ TestcaseType.KEY_MATCHING + " ] Table: " + r.getTableName() +
+                "\n[" + TestcaseType.KEY_MATCHING + "] Table: " + r.getTableName() +
                         "\n       Source rows   : " + r.getTotalSource() +
                         "\n       Target rows   : " + r.getTotalTarget() +
                         "\n       Mismatch      : " + r.getMismatch() +
@@ -117,7 +121,7 @@ public class TestListener implements ITestListener {
 
     public void logResultDuplicates(DuplicateResult r) {
         System.out.println(
-                "\n[ "+ TestcaseType.DUPLICATE + " ] Table: " + r.getTableName() +
+                "\n[" + TestcaseType.DUPLICATE + "] Table: " + r.getTableName() +
                         "\n       Source duplicate case: " + r.getDuplicateInSource() +
                         "\n       Target duplicate case: " + r.getDuplicateInTarget()
         );
@@ -125,9 +129,30 @@ public class TestListener implements ITestListener {
 
     public void logResultCount(CountResult r) {
         System.out.println(
-                "\n[ "+ TestcaseType.COUNT + " ] Table: " + r.getTableName() +
+                "\n[" + TestcaseType.COUNT + "] Table: " + r.getTableName() +
                         "\n       Source rows: " + r.getTotalSource() +
                         "\n       Target rows: " + r.getTotalTarget()
         );
     }
+
+    public static void logTableCompareResult(TableCompareResult tableCompareResult) {
+        if (!tableCompareResult.getSourceDataSet().isEmpty()) {
+            System.out.println(
+                    "\n[" + TestcaseType.TABLE_COMPARE + "] Missing Tables in Source:"
+            );
+            tableCompareResult.getSourceDataSet().forEach(table ->
+                    System.out.println("       " + table)
+            );
+        }
+
+        if (!tableCompareResult.getCsvDataSet().isEmpty()) {
+            System.out.println(
+                    "\n[" + TestcaseType.TABLE_COMPARE + "] Missing Tables in CSV:"
+            );
+            tableCompareResult.getCsvDataSet().forEach(table ->
+                    System.out.println("       " + table)
+            );
+        }
+    }
+
 }

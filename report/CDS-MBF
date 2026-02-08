@@ -1,2 +1,0 @@
-tcKeyCount,tcKeyDuplicate,tcKeyMatching,tableName,primaryKeyColumn
-TC_COUNT_001,TC_DUP_001,TC_HASH_001,order_item,order_id|quantity
